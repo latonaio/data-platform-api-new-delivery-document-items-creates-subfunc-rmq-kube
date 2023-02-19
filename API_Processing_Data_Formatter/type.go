@@ -1,27 +1,30 @@
 package api_processing_data_formatter
 
 type SDC struct {
-	MetaData                  *MetaData                  `json:"MetaData"`
-	ProcessType               *ProcessType               `json:"ProcessType"`
-	OrderItem                 []*OrderItem               `json:"OrderItem"`
-	OrdersItemScheduleLine    []*OrdersItemScheduleLine  `json:"OrdersItemScheduleLine"`
-	OrdersHeader              []*OrdersHeader            `json:"OrdersHeader"`
-	CalculateDeliveryDocument *CalculateDeliveryDocument `json:"CalculateDeliveryDocument"`
-	DocumentDate              *DocumentDate              `json:"DocumentDate"`
-	PaymentTerms              []*PaymentTerms            `json:"PaymentTerms"`
-	InvoiceDocumentDate       *InvoiceDocumentDate       `json:"InvoiceDocumentDate"`
-	HeaderGrossWeight         *HeaderGrossWeight         `json:"HeaderGrossWeight"`
-	HeaderNetWeight           *HeaderNetWeight           `json:"HeaderNetWeight"`
-	CreationDateHeader        *CreationDate              `json:"CreationDateHeader"`
-	LastChangeDateHeader      *LastChangeDate            `json:"LastChangeDateHeader"`
-	CreationTimeHeader        *CreationTime              `json:"CreationTimeHeader"`
-	LastChangeTimeHeader      *LastChangeTime            `json:"LastChangeTimeHeader"`
-	DeliveryDocumentItem      []*DeliveryDocumentItem    `json:"DeliveryDocumentItem"`
-	OrdersItem                []*OrdersItem              `json:"OrdersItem"`
-	CreationDateItem          *CreationDate              `json:"CreationDateItem"`
-	LastChangeDateItem        *LastChangeDate            `json:"LastChangeDateItem"`
-	CreationTimeItem          *CreationTime              `json:"CreationTimeItem"`
-	LastChangeTimeItem        *LastChangeTime            `json:"LastChangeTimeItem"`
+	MetaData                  *MetaData                    `json:"MetaData"`
+	ProcessType               *ProcessType                 `json:"ProcessType"`
+	OrderItem                 []*OrderItem                 `json:"OrderItem"`
+	OrdersItemScheduleLine    []*OrdersItemScheduleLine    `json:"OrdersItemScheduleLine"`
+	OrdersHeader              []*OrdersHeader              `json:"OrdersHeader"`
+	CalculateDeliveryDocument []*CalculateDeliveryDocument `json:"CalculateDeliveryDocument"`
+	DocumentDate              *DocumentDate                `json:"DocumentDate"`
+	PaymentTerms              []*PaymentTerms              `json:"PaymentTerms"`
+	InvoiceDocumentDate       *InvoiceDocumentDate         `json:"InvoiceDocumentDate"`
+	HeaderGrossWeight         *HeaderGrossWeight           `json:"HeaderGrossWeight"`
+	HeaderNetWeight           *HeaderNetWeight             `json:"HeaderNetWeight"`
+	CreationDateHeader        *CreationDate                `json:"CreationDateHeader"`
+	LastChangeDateHeader      *LastChangeDate              `json:"LastChangeDateHeader"`
+	CreationTimeHeader        *CreationTime                `json:"CreationTimeHeader"`
+	LastChangeTimeHeader      *LastChangeTime              `json:"LastChangeTimeHeader"`
+	DeliveryDocumentItem      []*DeliveryDocumentItem      `json:"DeliveryDocumentItem"`
+	OrdersItem                []*OrdersItem                `json:"OrdersItem"`
+	Partner                   []*Partner                   `json:"Partner"`
+	Address                   []*Address                   `json:"Address"`
+	AddressMaster             []*AddressMaster             `json:"AddressMaster"`
+	CreationDateItem          *CreationDate                `json:"CreationDateItem"`
+	LastChangeDateItem        *LastChangeDate              `json:"LastChangeDateItem"`
+	CreationTimeItem          *CreationTime                `json:"CreationTimeItem"`
+	LastChangeTimeItem        *LastChangeTime              `json:"LastChangeTimeItem"`
 }
 
 // Initializer
@@ -132,8 +135,19 @@ type CalculateDeliveryDocumentQueryGets struct {
 }
 
 type CalculateDeliveryDocument struct {
-	DeliveryDocumentLatestNumber *int `json:"DeliveryDocumentLatestNumber"`
-	DeliveryDocument             int  `json:"DeliveryDocument"`
+	DeliveryDocumentLatestNumber *int   `json:"DeliveryDocumentLatestNumber"`
+	DeliveryDocument             int    `json:"DeliveryDocument"`
+	OrderID                      int    `json:"OrderID"`
+	OrderItem                    int    `json:"OrderItem"`
+	DeliverFromPlant             string `json:"DeliverFromPlant"`
+	DeliverToPlant               string `json:"DeliverToPlant"`
+}
+
+type DeliverPlant struct {
+	DeliverFromPlant string `json:"DeliverFromPlant"`
+	DeliverToPlant   string `json:"DeliverToPlant"`
+	OrderID          int    `json:"OrderID"`
+	OrderItem        int    `json:"OrderItem"`
 }
 
 type DocumentDate struct {
@@ -164,6 +178,8 @@ type HeaderNetWeight struct {
 
 // Item
 type DeliveryDocumentItem struct {
+	OrderID                    int `json:"OrderID"`
+	OrderItem                  int `json:"OrderItem"`
 	DeliveryDocumentItemNumber int `json:"DeliveryDocumentItemNumber"`
 }
 
@@ -220,6 +236,8 @@ type OrdersItem struct {
 	ItemGrossWeight                               *float32 `json:"ItemGrossWeight"`
 	ProductNetWeight                              *float32 `json:"ProductNetWeight"`
 	ItemNetWeight                                 *float32 `json:"ItemNetWeight"`
+	InternalCapacityQuantity                      *float32 `json:"InternalCapacityQuantity"`
+	InternalCapacityQuantityUnit                  *string  `json:"InternalCapacityQuantityUnit"`
 	NetAmount                                     *float32 `json:"NetAmount"`
 	TaxAmount                                     *float32 `json:"TaxAmount"`
 	GrossAmount                                   *float32 `json:"GrossAmount"`
@@ -246,6 +264,69 @@ type OrdersItem struct {
 	TaxRate                                       *float32 `json:"TaxRate"`
 	CountryOfOrigin                               *string  `json:"CountryOfOrigin"`
 	CountryOfOriginLanguage                       *string  `json:"CountryOfOriginLanguage"`
+}
+
+// Partner
+type Partner struct {
+	OrderID                 int     `json:"OrderID"`
+	PartnerFunction         string  `json:"PartnerFunction"`
+	BusinessPartner         int     `json:"BusinessPartner"`
+	BusinessPartnerFullName *string `json:"BusinessPartnerFullName"`
+	BusinessPartnerName     *string `json:"BusinessPartnerName"`
+	Organization            *string `json:"Organization"`
+	Country                 *string `json:"Country"`
+	Language                *string `json:"Language"`
+	Currency                *string `json:"Currency"`
+	ExternalDocumentID      *string `json:"ExternalDocumentID"`
+	AddressID               *int    `json:"AddressID"`
+}
+
+// Address
+type Address struct {
+	OrderID     int     `json:"OrderID"`
+	AddressID   int     `json:"AddressID"`
+	PostalCode  *string `json:"PostalCode"`
+	LocalRegion *string `json:"LocalRegion"`
+	Country     *string `json:"Country"`
+	District    *string `json:"District"`
+	StreetName  *string `json:"StreetName"`
+	CityName    *string `json:"CityName"`
+	Building    *string `json:"Building"`
+	Floor       *int    `json:"Floor"`
+	Room        *int    `json:"Room"`
+}
+
+type AddressMaster struct {
+	AddressID         int     `json:"AddressID"`
+	ValidityEndDate   string  `json:"ValidityEndDate"`
+	ValidityStartDate string  `json:"ValidityStartDate"`
+	PostalCode        string  `json:"PostalCode"`
+	LocalRegion       string  `json:"LocalRegion"`
+	Country           string  `json:"Country"`
+	GlobalRegion      string  `json:"GlobalRegion"`
+	TimeZone          string  `json:"TimeZone"`
+	District          *string `json:"District"`
+	StreetName        string  `json:"StreetName"`
+	CityName          string  `json:"CityName"`
+	Building          *string `json:"Building"`
+	Floor             *int    `json:"Floor"`
+	Room              *int    `json:"Room"`
+}
+
+type CalculateAddressIDKey struct {
+	ServiceLabel             string `json:"service_label"`
+	FieldNameWithNumberRange string `json:"FieldNameWithNumberRange"`
+}
+
+type CalculateAddressIDQueryGets struct {
+	ServiceLabel             string `json:"service_label"`
+	FieldNameWithNumberRange string `json:"FieldNameWithNumberRange"`
+	LatestNumber             *int   `json:"LatestNumber"`
+}
+
+type CalculateAddressID struct {
+	AddressIDLatestNumber *int `json:"AddressIDLatestNumber"`
+	AddressID             int  `json:"AddressID"`
 }
 
 // 日付等の処理

@@ -53,6 +53,8 @@ type OrdersItem struct {
 	ItemGrossWeight                               *float32 `json:"ItemGrossWeight"`
 	ProductNetWeight                              *float32 `json:"ProductNetWeight"`
 	ItemNetWeight                                 *float32 `json:"ItemNetWeight"`
+	InternalCapacityQuantity                      *float32 `json:"InternalCapacityQuantity"`
+	InternalCapacityQuantityUnit                  *string  `json:"InternalCapacityQuantityUnit"`
 	NetAmount                                     *float32 `json:"NetAmount"`
 	TaxAmount                                     *float32 `json:"TaxAmount"`
 	GrossAmount                                   *float32 `json:"GrossAmount"`

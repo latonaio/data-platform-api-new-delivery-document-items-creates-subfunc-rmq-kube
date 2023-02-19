@@ -351,16 +351,24 @@ func (psdc *SDC) ConvertToCalculateDeliveryDocumentQueryGets(rows *sql.Rows) (*C
 	return &res, nil
 }
 
-func (psdc *SDC) ConvertToCalculateDeliveryDocument(deliveryDocumentLatestNumber *int, deliveryDocument int) *CalculateDeliveryDocument {
+func (psdc *SDC) ConvertToCalculateDeliveryDocument(deliveryDocumentLatestNumber *int, deliveryDocument, orderID, orderItem int, deliverFromPlant, deliverToPlant string) *CalculateDeliveryDocument {
 	pm := &requests.CalculateDeliveryDocument{}
 
 	pm.DeliveryDocumentLatestNumber = deliveryDocumentLatestNumber
 	pm.DeliveryDocument = deliveryDocument
+	pm.OrderID = orderID
+	pm.OrderItem = orderItem
+	pm.DeliverFromPlant = deliverFromPlant
+	pm.DeliverToPlant = deliverToPlant
 
 	data := pm
 	res := CalculateDeliveryDocument{
 		DeliveryDocumentLatestNumber: data.DeliveryDocumentLatestNumber,
 		DeliveryDocument:             data.DeliveryDocument,
+		OrderID:                      data.OrderID,
+		OrderItem:                    data.OrderItem,
+		DeliverFromPlant:             data.DeliverFromPlant,
+		DeliverToPlant:               data.DeliverToPlant,
 	}
 
 	return &res
@@ -547,25 +555,33 @@ func (psdc *SDC) ConvertToLastChangeTimeHeader(systemTime *string) *LastChangeTi
 func (psdc *SDC) ConvertToDeliveryDocumentItem(sdc *api_input_reader.SDC) []*DeliveryDocumentItem {
 	res := make([]*DeliveryDocumentItem, 0)
 	if psdc.ProcessType.BulkProcess {
-		for i := range psdc.OrdersItemScheduleLine {
+		for i, scheduleLine := range psdc.OrdersItemScheduleLine {
 			pm := &requests.DeliveryDocumentItem{}
 
+			pm.OrderID = scheduleLine.OrderID
+			pm.OrderItem = scheduleLine.OrderItem
 			pm.DeliveryDocumentItemNumber = i + 1
 
 			data := pm
 			res = append(res, &DeliveryDocumentItem{
+				OrderID:                    data.OrderID,
+				OrderItem:                  data.OrderItem,
 				DeliveryDocumentItemNumber: data.DeliveryDocumentItemNumber,
 			})
 		}
 	} else if psdc.ProcessType.IndividualProcess {
-		for i := range sdc.Header.Item {
+		for i, item := range sdc.Header.Item {
 			pm := &requests.DeliveryDocumentItem{}
 
+			pm.OrderID = *item.OrderID
+			pm.OrderItem = *item.OrderItem
 			pm.DeliveryDocumentItemNumber = i + 1
 
 			data := pm
 			res = append(res, &DeliveryDocumentItem{
 				DeliveryDocumentItemNumber: data.DeliveryDocumentItemNumber,
+				OrderID:                    data.OrderID,
+				OrderItem:                  data.OrderItem,
 			})
 		}
 	}
@@ -635,6 +651,8 @@ func (psdc *SDC) ConvertToOrdersItem(rows *sql.Rows) ([]*OrdersItem, error) {
 			&pm.ItemGrossWeight,
 			&pm.ProductNetWeight,
 			&pm.ItemNetWeight,
+			&pm.InternalCapacityQuantity,
+			&pm.InternalCapacityQuantityUnit,
 			&pm.NetAmount,
 			&pm.TaxAmount,
 			&pm.GrossAmount,
@@ -720,6 +738,8 @@ func (psdc *SDC) ConvertToOrdersItem(rows *sql.Rows) ([]*OrdersItem, error) {
 			ItemGrossWeight:                               data.ItemGrossWeight,
 			ProductNetWeight:                              data.ProductNetWeight,
 			ItemNetWeight:                                 data.ItemNetWeight,
+			InternalCapacityQuantity:                      data.InternalCapacityQuantity,
+			InternalCapacityQuantityUnit:                  data.InternalCapacityQuantityUnit,
 			NetAmount:                                     data.NetAmount,
 			TaxAmount:                                     data.TaxAmount,
 			GrossAmount:                                   data.GrossAmount,
@@ -755,6 +775,238 @@ func (psdc *SDC) ConvertToOrdersItem(rows *sql.Rows) ([]*OrdersItem, error) {
 	return res, nil
 }
 
+// Partner
+func (psdc *SDC) ConvertToPartner(rows *sql.Rows) ([]*Partner, error) {
+	defer rows.Close()
+	res := make([]*Partner, 0)
+
+	i := 0
+	for rows.Next() {
+		pm := &requests.Partner{}
+		i++
+
+		err := rows.Scan(
+			&pm.OrderID,
+			&pm.PartnerFunction,
+			&pm.BusinessPartner,
+			&pm.BusinessPartnerFullName,
+			&pm.BusinessPartnerName,
+			&pm.Organization,
+			&pm.Country,
+			&pm.Language,
+			&pm.Currency,
+			&pm.ExternalDocumentID,
+			&pm.AddressID,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		data := pm
+		res = append(res, &Partner{
+			OrderID:                 data.OrderID,
+			PartnerFunction:         data.PartnerFunction,
+			BusinessPartner:         data.BusinessPartner,
+			BusinessPartnerFullName: data.BusinessPartnerFullName,
+			BusinessPartnerName:     data.BusinessPartnerName,
+			Organization:            data.Organization,
+			Country:                 data.Country,
+			Language:                data.Language,
+			Currency:                data.Currency,
+			ExternalDocumentID:      data.ExternalDocumentID,
+			AddressID:               data.AddressID,
+		})
+	}
+	if i == 0 {
+		return nil, xerrors.Errorf("'data_platform_orders_partner_data'テーブルに対象のレコードが存在しません。")
+	}
+
+	return res, nil
+}
+
+// Address
+func (psdc *SDC) ConvertToAddress(rows *sql.Rows) ([]*Address, error) {
+	defer rows.Close()
+	res := make([]*Address, 0)
+
+	i := 0
+	for rows.Next() {
+		i++
+		pm := &requests.Address{}
+
+		err := rows.Scan(
+			&pm.OrderID,
+			&pm.AddressID,
+			&pm.PostalCode,
+			&pm.LocalRegion,
+			&pm.Country,
+			&pm.District,
+			&pm.StreetName,
+			&pm.CityName,
+			&pm.Building,
+			&pm.Floor,
+			&pm.Room,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		data := pm
+		res = append(res, &Address{
+			OrderID:     data.OrderID,
+			AddressID:   data.AddressID,
+			PostalCode:  data.PostalCode,
+			LocalRegion: data.LocalRegion,
+			Country:     data.Country,
+			District:    data.District,
+			StreetName:  data.StreetName,
+			CityName:    data.CityName,
+			Building:    data.Building,
+			Floor:       data.Floor,
+			Room:        data.Room,
+		})
+	}
+	if i == 0 {
+		return nil, xerrors.Errorf("'data_platform_orders_address_data'テーブルに対象のレコードが存在しません。")
+	}
+
+	return res, nil
+}
+
+func (psdc *SDC) ConvertToAddressMaster(sdc *api_input_reader.SDC, idx, addressID int) *AddressMaster {
+	pm := &requests.AddressMaster{
+		ValidityStartDate: *sdc.Header.OrderValidityStartDate,
+		ValidityEndDate:   *sdc.Header.OrderValidityEndDate,
+		PostalCode:        *sdc.Header.Address[idx].PostalCode,
+		LocalRegion:       *sdc.Header.Address[idx].LocalRegion,
+		Country:           *sdc.Header.Address[idx].Country,
+		District:          sdc.Header.Address[idx].District,
+		StreetName:        *sdc.Header.Address[idx].StreetName,
+		CityName:          *sdc.Header.Address[idx].CityName,
+		Building:          sdc.Header.Address[idx].Building,
+		Floor:             sdc.Header.Address[idx].Floor,
+		Room:              sdc.Header.Address[idx].Room,
+	}
+
+	pm.AddressID = addressID
+
+	data := pm
+	res := &AddressMaster{
+		AddressID:         data.AddressID,
+		ValidityEndDate:   data.ValidityEndDate,
+		ValidityStartDate: data.ValidityStartDate,
+		PostalCode:        data.PostalCode,
+		LocalRegion:       data.LocalRegion,
+		Country:           data.Country,
+		District:          data.District,
+		StreetName:        data.StreetName,
+		CityName:          data.CityName,
+		Building:          data.Building,
+		Floor:             data.Floor,
+		Room:              data.Room,
+	}
+
+	return res
+}
+
+func (psdc *SDC) ConvertToAddressFromInput() []*Address {
+	res := make([]*Address, 0)
+
+	for _, v := range psdc.AddressMaster {
+		pm := &requests.Address{}
+
+		pm.AddressID = v.AddressID
+		pm.PostalCode = &v.PostalCode
+		pm.LocalRegion = &v.LocalRegion
+		pm.Country = &v.Country
+		pm.District = v.District
+		pm.StreetName = &v.StreetName
+		pm.CityName = &v.CityName
+		pm.Building = v.Building
+		pm.Floor = v.Floor
+		pm.Room = v.Room
+
+		data := pm
+		res = append(res, &Address{
+			OrderID:     data.OrderID,
+			AddressID:   data.AddressID,
+			PostalCode:  data.PostalCode,
+			LocalRegion: data.LocalRegion,
+			Country:     data.Country,
+			District:    data.District,
+			StreetName:  data.StreetName,
+			CityName:    data.CityName,
+			Building:    data.Building,
+			Floor:       data.Floor,
+			Room:        data.Room,
+		})
+
+	}
+
+	return res
+}
+
+func (psdc *SDC) ConvertToCalculateAddressIDKey() *CalculateAddressIDKey {
+	pm := &requests.CalculateAddressIDKey{
+		ServiceLabel:             "ADDRESS_ID",
+		FieldNameWithNumberRange: "AddressID",
+	}
+
+	data := pm
+	res := CalculateAddressIDKey{
+		ServiceLabel:             data.ServiceLabel,
+		FieldNameWithNumberRange: data.FieldNameWithNumberRange,
+	}
+
+	return &res
+}
+
+func (psdc *SDC) ConvertToCalculateAddressIDQueryGets(rows *sql.Rows) (*CalculateAddressIDQueryGets, error) {
+	defer rows.Close()
+	pm := &requests.CalculateAddressIDQueryGets{}
+
+	i := 0
+	for rows.Next() {
+		i++
+		err := rows.Scan(
+			&pm.ServiceLabel,
+			&pm.FieldNameWithNumberRange,
+			&pm.LatestNumber,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if i == 0 {
+		return nil, xerrors.Errorf("'data_platform_number_range_latest_number_data'テーブルに対象のレコードが存在しません。")
+	}
+
+	data := pm
+	res := CalculateAddressIDQueryGets{
+		ServiceLabel:             data.ServiceLabel,
+		FieldNameWithNumberRange: data.FieldNameWithNumberRange,
+		LatestNumber:             data.LatestNumber,
+	}
+
+	return &res, nil
+}
+
+func (psdc *SDC) ConvertToCalculateAddressID(addressIDLatestNumber *int, addressID int) *CalculateAddressID {
+	pm := &requests.CalculateAddressID{}
+
+	pm.AddressIDLatestNumber = addressIDLatestNumber
+	pm.AddressID = addressID
+
+	data := pm
+	res := CalculateAddressID{
+		AddressIDLatestNumber: data.AddressIDLatestNumber,
+		AddressID:             data.AddressID,
+	}
+
+	return &res
+}
+
+// 日付等の処理
 func (psdc *SDC) ConvertToCreationDateItem(systemDate *string) *CreationDate {
 	pm := &requests.CreationDate{}
 

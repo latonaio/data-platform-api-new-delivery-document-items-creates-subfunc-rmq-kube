@@ -41,8 +41,9 @@ func (f *SubFunction) OrdersItem(
 		BatchMgmtPolicyInStockConfirmationPlant, StockConfirmationPlantBatch, StockConfirmationPlantBatchValidityStartDate,
 		StockConfirmationPlantBatchValidityEndDate, OrderQuantityInBaseUnit, OrderQuantityInDeliveryUnit, StockConfirmationPolicy,
 		StockConfirmationStatus, ConfirmedOrderQuantityInBaseUnit, ItemWeightUnit, ProductGrossWeight, ItemGrossWeight, ProductNetWeight,
-		ItemNetWeight, NetAmount, TaxAmount, GrossAmount, ProductionPlantBusinessPartner, ProductionPlant, ProductionPlantTimeZone,
-		ProductionPlantStorageLocation, ProductIsBatchManagedInProductionPlant, BatchMgmtPolicyInProductionPlant, ProductionPlantBatch,
+		ItemNetWeight, InternalCapacityQuantity, InternalCapacityQuantityUnit, NetAmount, TaxAmount, GrossAmount,
+		ProductionPlantBusinessPartner, ProductionPlant, ProductionPlantTimeZone, ProductionPlantStorageLocation,
+		ProductIsBatchManagedInProductionPlant, BatchMgmtPolicyInProductionPlant, ProductionPlantBatch,
 		ProductionPlantBatchValidityStartDate, ProductionPlantBatchValidityEndDate, Incoterms, TransactionTaxClassification,
 		ProductTaxClassificationBillToCountry, ProductTaxClassificationBillFromCountry, DefinedTaxClassification, AccountAssignmentGroup,
 		ProductAccountAssignmentGroup, PaymentTerms, PaymentMethod, Project, TaxCode, TaxRate, CountryOfOrigin, CountryOfOriginLanguage

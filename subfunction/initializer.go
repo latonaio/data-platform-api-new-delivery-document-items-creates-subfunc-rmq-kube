@@ -5,26 +5,32 @@ import (
 	api_input_reader "data-platform-api-delivery-document-items-creates-subfunc/API_Input_Reader"
 	dpfm_api_output_formatter "data-platform-api-delivery-document-items-creates-subfunc/API_Output_Formatter"
 	api_processing_data_formatter "data-platform-api-delivery-document-items-creates-subfunc/API_Processing_Data_Formatter"
+	"data-platform-api-delivery-document-items-creates-subfunc/config"
 	"strings"
 
 	"sync"
 
 	"github.com/latonaio/golang-logging-library-for-data-platform/logger"
 	database "github.com/latonaio/golang-mysql-network-connector"
+	rabbitmq "github.com/latonaio/rabbitmq-golang-client-for-data-platform"
 	"golang.org/x/xerrors"
 )
 
 type SubFunction struct {
-	ctx context.Context
-	db  *database.Mysql
-	l   *logger.Logger
+	ctx  context.Context
+	db   *database.Mysql
+	conf *config.Conf
+	rmq  *rabbitmq.RabbitmqClient
+	l    *logger.Logger
 }
 
-func NewSubFunction(ctx context.Context, db *database.Mysql, l *logger.Logger) *SubFunction {
+func NewSubFunction(ctx context.Context, db *database.Mysql, conf *config.Conf, rmq *rabbitmq.RabbitmqClient, l *logger.Logger) *SubFunction {
 	return &SubFunction{
-		ctx: ctx,
-		db:  db,
-		l:   l,
+		ctx:  ctx,
+		db:   db,
+		conf: conf,
+		rmq:  rmq,
+		l:    l,
 	}
 }
 
@@ -86,10 +92,10 @@ func (f *SubFunction) OrderItemByArraySpec(
 
 	dataKey := psdc.ConvertToOrderItemKey()
 
-	deliverToParty := sdc.DeliveryDocumentInputParameters.DeliverToParty
-	deliverFromParty := sdc.DeliveryDocumentInputParameters.DeliverFromParty
-	deliverToPlant := sdc.DeliveryDocumentInputParameters.DeliverToPlant
-	deliverFromPlant := sdc.DeliveryDocumentInputParameters.DeliverFromPlant
+	deliverToParty := sdc.InputParameters.DeliverToParty
+	deliverFromParty := sdc.InputParameters.DeliverFromParty
+	deliverToPlant := sdc.InputParameters.DeliverToPlant
+	deliverFromPlant := sdc.InputParameters.DeliverFromPlant
 
 	for i := range *deliverToParty {
 		dataKey.DeliverToParty = append(dataKey.DeliverToParty, (*deliverToParty)[i])
@@ -171,14 +177,14 @@ func (f *SubFunction) OrderItemByRangeSpec(
 ) ([]*api_processing_data_formatter.OrderItem, error) {
 	dataKey := psdc.ConvertToOrderItemKey()
 
-	dataKey.DeliverToPartyFrom = sdc.DeliveryDocumentInputParameters.DeliverToPartyFrom
-	dataKey.DeliverToPartyTo = sdc.DeliveryDocumentInputParameters.DeliverToPartyTo
-	dataKey.DeliverFromPartyFrom = sdc.DeliveryDocumentInputParameters.DeliverFromPartyFrom
-	dataKey.DeliverFromPartyTo = sdc.DeliveryDocumentInputParameters.DeliverFromPartyTo
-	dataKey.DeliverToPlantFrom = sdc.DeliveryDocumentInputParameters.DeliverToPlantFrom
-	dataKey.DeliverToPlantTo = sdc.DeliveryDocumentInputParameters.DeliverToPlantTo
-	dataKey.DeliverFromPlantFrom = sdc.DeliveryDocumentInputParameters.DeliverFromPlantFrom
-	dataKey.DeliverFromPlantTo = sdc.DeliveryDocumentInputParameters.DeliverFromPlantTo
+	dataKey.DeliverToPartyFrom = sdc.InputParameters.DeliverToPartyFrom
+	dataKey.DeliverToPartyTo = sdc.InputParameters.DeliverToPartyTo
+	dataKey.DeliverFromPartyFrom = sdc.InputParameters.DeliverFromPartyFrom
+	dataKey.DeliverFromPartyTo = sdc.InputParameters.DeliverFromPartyTo
+	dataKey.DeliverToPlantFrom = sdc.InputParameters.DeliverToPlantFrom
+	dataKey.DeliverToPlantTo = sdc.InputParameters.DeliverToPlantTo
+	dataKey.DeliverFromPlantFrom = sdc.InputParameters.DeliverFromPlantFrom
+	dataKey.DeliverFromPlantTo = sdc.InputParameters.DeliverFromPlantTo
 
 	count := new(int)
 	err := f.db.QueryRow(
@@ -283,27 +289,21 @@ func (f *SubFunction) OrdersItemScheduleLineByArraySpec(
 	dataKey := psdc.ConvertToOrdersItemScheduleLineKey()
 
 	orderItem := psdc.OrderItem
-	confirmedDeliveryDate := sdc.DeliveryDocumentInputParameters.ConfirmedDeliveryDate
+	confirmedDeliveryDate := sdc.InputParameters.ConfirmedDeliveryDate
 
 	for i := range orderItem {
 		dataKey.OrderID = append(dataKey.OrderID, (orderItem)[i].OrderID)
-	}
-	for i := range orderItem {
 		dataKey.OrderItem = append(dataKey.OrderItem, (orderItem)[i].OrderItem)
 	}
 	for i := range *confirmedDeliveryDate {
 		dataKey.ConfirmedDeliveryDate = append(dataKey.ConfirmedDeliveryDate, (*confirmedDeliveryDate)[i])
 	}
 
-	repeat1 := strings.Repeat("?,", len(dataKey.OrderID)-1) + "?"
-	for _, v := range dataKey.OrderID {
-		args = append(args, v)
+	repeat1 := strings.Repeat("(?,?),", len(dataKey.OrderID)-1) + "(?,?)"
+	for i := range dataKey.OrderID {
+		args = append(args, dataKey.OrderID[i], dataKey.OrderItem[i])
 	}
-	repeat2 := strings.Repeat("?,", len(dataKey.OrderItem)-1) + "?"
-	for _, v := range dataKey.OrderItem {
-		args = append(args, v)
-	}
-	repeat3 := strings.Repeat("?,", len(dataKey.ConfirmedDeliveryDate)-1) + "?"
+	repeat2 := strings.Repeat("?,", len(dataKey.ConfirmedDeliveryDate)-1) + "?"
 	for _, v := range dataKey.ConfirmedDeliveryDate {
 		args = append(args, v)
 	}
@@ -314,9 +314,8 @@ func (f *SubFunction) OrdersItemScheduleLineByArraySpec(
 		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OrderQuantityInBaseUnit,
 		ConfirmedOrderQuantityByPDTAvailCheck, OpenConfirmedQuantityInBaseUnit, StockIsFullyConfirmed, ItemScheduleLineDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_schedule_line_data
-		WHERE OrderID IN ( `+repeat1+` )
-		AND OrderItem IN ( `+repeat2+` )
-		AND ConfirmedDeliveryDate IN ( `+repeat3+` )
+		WHERE (OrderID, OrderItem) IN ( `+repeat1+` )
+		AND ConfirmedDeliveryDate IN ( `+repeat2+` )
 		AND ItemScheduleLineDeliveryBlockStatus = ?
 		AND OpenConfirmedQuantityInBaseUnit <> ?;`, args...,
 	)
@@ -345,22 +344,16 @@ func (f *SubFunction) OrdersItemScheduleLineByRangeSpec(
 
 	for i := range orderItem {
 		dataKey.OrderID = append(dataKey.OrderID, (orderItem)[i].OrderID)
-	}
-	for i := range orderItem {
 		dataKey.OrderItem = append(dataKey.OrderItem, (orderItem)[i].OrderItem)
 	}
 
-	repeat1 := strings.Repeat("?,", len(dataKey.OrderID)-1) + "?"
-	for _, v := range dataKey.OrderID {
-		args = append(args, v)
-	}
-	repeat2 := strings.Repeat("?,", len(dataKey.OrderItem)-1) + "?"
-	for _, v := range dataKey.OrderItem {
-		args = append(args, v)
+	repeat := strings.Repeat("(?,?),", len(dataKey.OrderID)-1) + "(?,?)"
+	for i := range dataKey.OrderID {
+		args = append(args, dataKey.OrderID[i], dataKey.OrderItem[i])
 	}
 
-	dataKey.ConfirmedDeliveryDateFrom = sdc.DeliveryDocumentInputParameters.ConfirmedDeliveryDateFrom
-	dataKey.ConfirmedDeliveryDateTo = sdc.DeliveryDocumentInputParameters.ConfirmedDeliveryDateTo
+	dataKey.ConfirmedDeliveryDateFrom = sdc.InputParameters.ConfirmedDeliveryDateFrom
+	dataKey.ConfirmedDeliveryDateTo = sdc.InputParameters.ConfirmedDeliveryDateTo
 
 	args = append(args, dataKey.ConfirmedDeliveryDateFrom, dataKey.ConfirmedDeliveryDateTo, dataKey.ItemScheduleLineDeliveryBlockStatus, dataKey.OpenConfirmedQuantityInBaseUnit)
 
@@ -368,8 +361,7 @@ func (f *SubFunction) OrdersItemScheduleLineByRangeSpec(
 		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OrderQuantityInBaseUnit,
 		ConfirmedOrderQuantityByPDTAvailCheck, OpenConfirmedQuantityInBaseUnit, StockIsFullyConfirmed, ItemScheduleLineDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_schedule_line_data
-		WHERE OrderID IN ( `+repeat1+` )
-		AND OrderItem IN ( `+repeat2+` )
+		WHERE (OrderID, OrderItem) IN ( `+repeat+` )
 		AND ConfirmedDeliveryDate BETWEEN ? AND ?
 		AND ItemScheduleLineDeliveryBlockStatus = ?
 		AND OpenConfirmedQuantityInBaseUnit <> ?;`, args...,
@@ -399,18 +391,12 @@ func (f *SubFunction) OrdersItemScheduleLineInIndividualProcess(
 
 	for i := range orderItem {
 		dataKey.OrderID = append(dataKey.OrderID, (orderItem)[i].OrderID)
-	}
-	for i := range orderItem {
 		dataKey.OrderItem = append(dataKey.OrderItem, (orderItem)[i].OrderItem)
 	}
 
-	repeat1 := strings.Repeat("?,", len(dataKey.OrderID)-1) + "?"
-	for _, v := range dataKey.OrderID {
-		args = append(args, v)
-	}
-	repeat2 := strings.Repeat("?,", len(dataKey.OrderItem)-1) + "?"
-	for _, v := range dataKey.OrderItem {
-		args = append(args, v)
+	repeat := strings.Repeat("(?,?),", len(dataKey.OrderID)-1) + "(?,?)"
+	for i := range dataKey.OrderID {
+		args = append(args, dataKey.OrderID[i], dataKey.OrderItem[i])
 	}
 
 	args = append(args, dataKey.ItemScheduleLineDeliveryBlockStatus, dataKey.OpenConfirmedQuantityInBaseUnit)
@@ -419,8 +405,7 @@ func (f *SubFunction) OrdersItemScheduleLineInIndividualProcess(
 		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OrderQuantityInBaseUnit,
 		ConfirmedOrderQuantityByPDTAvailCheck, OpenConfirmedQuantityInBaseUnit, StockIsFullyConfirmed, ItemScheduleLineDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_schedule_line_data
-		WHERE OrderID IN ( `+repeat1+` )
-		AND OrderItem IN ( `+repeat2+` )
+		WHERE (OrderID, OrderItem) IN ( `+repeat+` )
 		AND ItemScheduleLineDeliveryBlockStatus = ?
 		AND OpenConfirmedQuantityInBaseUnit <> ?;`, args...,
 	)
@@ -505,6 +490,17 @@ func (f *SubFunction) CreateSdc(
 		wg.Add(1)
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
+			// 1-3. DeliveryDocument  //IまたはII
+			psdc.CalculateDeliveryDocument, e = f.CalculateDeliveryDocument(sdc, psdc)
+			if e != nil {
+				err = e
+				return
+			}
+		}(wg)
+
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
 			// 1-5. InvoiceDocumentDate  //1-2-1
 			psdc.InvoiceDocumentDate, e = f.InvoiceDocumentDate(sdc, psdc)
 			if e != nil {
@@ -522,17 +518,35 @@ func (f *SubFunction) CreateSdc(
 			// 4-2. HeaderNetWeight  //1-2-1
 			psdc.HeaderNetWeight = f.HeaderNetWeight(sdc, psdc)
 		}(wg)
-	}(&wg)
 
-	wg.Add(1)
-	go func(wg *sync.WaitGroup) {
-		defer wg.Done()
-		// 1-3. DeliveryDocument
-		psdc.CalculateDeliveryDocument, e = f.CalculateDeliveryDocument(sdc, psdc)
-		if e != nil {
-			err = e
-			return
-		}
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			// 1-40. オーダー参照レコード・値の取得（オーダーパートナ）  //1-1
+			psdc.Partner, e = f.Partner(sdc, psdc)
+			if e != nil {
+				err = e
+				return
+			}
+		}(wg)
+
+		wg.Add(1)
+		go func(wg *sync.WaitGroup) {
+			defer wg.Done()
+			// 6-1. Orders Address からの住所データの取得  //IまたはII
+			psdc.Address, e = f.Address(sdc, psdc)
+			if e != nil {
+				err = e
+				return
+			}
+
+			// 6-2. AddressIDの登録(ユーザーが任意の住所を入力ファイルで指定した場合)
+			psdc.Address, e = f.AddressFromInput(sdc, psdc)
+			if e != nil {
+				err = e
+				return
+			}
+		}(wg)
 	}(&wg)
 
 	wg.Add(1)

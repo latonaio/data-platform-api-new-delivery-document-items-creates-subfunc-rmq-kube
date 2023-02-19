@@ -14,6 +14,9 @@ type RMQ struct {
 
 	queueFrom string
 	queueTo   []string
+
+	queueToSQL          string
+	sessionControlQueue string
 }
 
 func newRMQ() *RMQ {
@@ -27,6 +30,8 @@ func newRMQ() *RMQ {
 		queueTo: []string{
 			os.Getenv("RMQ_QUEUE_TO"),
 		},
+		queueToSQL:          os.Getenv("RMQ_QUEUE_TO_SQL"),
+		sessionControlQueue: os.Getenv("RMQ_SESSION_CONTROL_QUEUE"),
 	}
 }
 
@@ -40,4 +45,12 @@ func (c *RMQ) QueueFrom() string {
 
 func (c *RMQ) QueueTo() []string {
 	return c.queueTo
+}
+
+func (c *RMQ) QueueToSQL() string {
+	return c.queueToSQL
+}
+
+func (c *RMQ) SessionControlQueue() string {
+	return c.sessionControlQueue
 }

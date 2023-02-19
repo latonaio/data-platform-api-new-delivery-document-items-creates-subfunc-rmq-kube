@@ -14,7 +14,7 @@ func ConvertToItem(
 	psdc *api_processing_data_formatter.SDC,
 ) ([]*Item, error) {
 	var err error
-	res := make([]*Item, 0)
+	items := make([]*Item, 0)
 
 	ordersHeaderMap := StructArrayToMap(psdc.OrdersHeader, "OrderID")
 
@@ -26,14 +26,22 @@ func ConvertToItem(
 
 			orderID := psdc.OrdersItemScheduleLine[i].OrderID
 			orderItem := psdc.OrdersItemScheduleLine[i].OrderItem
-			idx := -1
-			for j, v := range psdc.OrdersItem {
-				if v.OrderID == orderID && v.OrderItem == orderItem {
-					idx = j
+			var deliverFromPlant, deliverToPlant string
+
+			ordersItemIdx := -1
+			for j, ordersItem := range psdc.OrdersItem {
+				if ordersItem.OrderID == orderID && ordersItem.OrderItem == orderItem {
+					if ordersItem.DeliverFromPlant == nil || ordersItem.DeliverToPlant == nil {
+						continue
+					}
+					deliverFromPlant = *ordersItem.DeliverFromPlant
+					deliverToPlant = *ordersItem.DeliverToPlant
+
+					ordersItemIdx = j
 					break
 				}
 			}
-			if idx == -1 {
+			if ordersItemIdx == -1 {
 				continue
 			}
 
@@ -44,7 +52,7 @@ func ConvertToItem(
 			}
 
 			// 1-2
-			item, err = jsonTypeConversion(item, psdc.OrdersItem[i])
+			item, err = jsonTypeConversion(item, psdc.OrdersItem[ordersItemIdx])
 			if err != nil {
 				return nil, xerrors.Errorf("request create error: %w", err)
 			}
@@ -58,15 +66,25 @@ func ConvertToItem(
 				return nil, xerrors.Errorf("request create error: %w", err)
 			}
 
-			item.DeliveryDocument = psdc.CalculateDeliveryDocument.DeliveryDocument
+			deliveryDocumentIdx := -1
+			for j, deliveryDocument := range psdc.CalculateDeliveryDocument {
+				if deliveryDocument.DeliverFromPlant == deliverFromPlant && deliveryDocument.DeliverToPlant == deliverToPlant {
+					deliveryDocumentIdx = j
+					break
+				}
+			}
+			if deliveryDocumentIdx == -1 {
+				continue
+			}
+			item.DeliveryDocument = psdc.CalculateDeliveryDocument[deliveryDocumentIdx].DeliveryDocument
 			item.DeliveryDocumentItem = psdc.DeliveryDocumentItem[i].DeliveryDocumentItemNumber
-			item.DeliveryDocumentItemCategory = &psdc.OrdersItem[idx].OrderItemCategory
+			item.DeliveryDocumentItemCategory = &psdc.OrdersItem[ordersItemIdx].OrderItemCategory
 
-			item.DeliveryDocumentItemText = &psdc.OrdersItem[idx].OrderItemText
-			item.DeliveryDocumentItemTextByBuyer = psdc.OrdersItem[idx].OrderItemTextByBuyer
-			item.DeliveryDocumentItemTextBySeller = psdc.OrdersItem[idx].OrderItemTextBySeller
+			item.DeliveryDocumentItemText = &psdc.OrdersItem[ordersItemIdx].OrderItemText
+			item.DeliveryDocumentItemTextByBuyer = psdc.OrdersItem[ordersItemIdx].OrderItemTextByBuyer
+			item.DeliveryDocumentItemTextBySeller = psdc.OrdersItem[ordersItemIdx].OrderItemTextBySeller
 
-			item.OriginalQuantityInBaseUnit = &psdc.OrdersItem[idx].OrderQuantityInBaseUnit
+			item.OriginalQuantityInBaseUnit = &psdc.OrdersItem[ordersItemIdx].OrderQuantityInBaseUnit
 
 			item.CreationDate = psdc.CreationDateItem.CreationDate
 			item.CreationTime = psdc.CreationTimeItem.CreationTime
@@ -88,10 +106,10 @@ func ConvertToItem(
 			item.ItemIssuingBlockStatus = getBoolPtr(false)
 			item.ItemReceivingBlockStatus = getBoolPtr(false)
 			item.ItemBillingBlockStatus = getBoolPtr(false)
-			// item.ItemIsCancelled =  //仕様書になし
-			// item.ItemIsDeleted =  //仕様書になし
+			item.IsCancelled = getBoolPtr(false)
+			item.IsMarkedForDeletion = getBoolPtr(false)
 
-			res = append(res, item)
+			items = append(items, item)
 		}
 	} else if processType.IndividualProcess {
 		for i := range sdc.Header.Item {
@@ -116,7 +134,7 @@ func ConvertToItem(
 				return nil, xerrors.Errorf("request create error: %w", err)
 			}
 
-			item.DeliveryDocument = psdc.CalculateDeliveryDocument.DeliveryDocument
+			item.DeliveryDocument = psdc.CalculateDeliveryDocument[0].DeliveryDocument
 			item.DeliveryDocumentItem = psdc.DeliveryDocumentItem[i].DeliveryDocumentItemNumber
 			item.DeliveryDocumentItemCategory = &psdc.OrdersItem[0].OrderItemCategory
 
@@ -149,11 +167,84 @@ func ConvertToItem(
 			// item.ItemIsCancelled =  //仕様書になし
 			// item.ItemIsDeleted =  //仕様書になし
 
-			res = append(res, item)
+			items = append(items, item)
 		}
 	}
 
-	return res, nil
+	return items, nil
+}
+
+func ConvertToPartner(
+	sdc *api_input_reader.SDC,
+	psdc *api_processing_data_formatter.SDC,
+) ([]*Partner, error) {
+	var err error
+
+	partners := make([]*Partner, 0)
+	for _, deliveryDocument := range psdc.CalculateDeliveryDocument {
+		for _, deliveryDocumentPartner := range psdc.Partner {
+			partner := &Partner{}
+			inputPartner := sdc.Header.Partner[0]
+
+			// 入力ファイル
+			partner, err = jsonTypeConversion(partner, inputPartner)
+			if err != nil {
+				return nil, err
+			}
+
+			partner.DeliveryDocument = deliveryDocument.DeliveryDocument
+			partner.PartnerFunction = deliveryDocumentPartner.PartnerFunction
+			partner.BusinessPartner = deliveryDocumentPartner.BusinessPartner
+			partner.BusinessPartnerFullName = deliveryDocumentPartner.BusinessPartnerFullName
+			partner.BusinessPartnerName = deliveryDocumentPartner.BusinessPartnerName
+			partner.Country = deliveryDocumentPartner.Country
+			partner.Language = deliveryDocumentPartner.Language
+			partner.Currency = deliveryDocumentPartner.Currency
+			partner.ExternalDocumentID = deliveryDocumentPartner.ExternalDocumentID
+			partner.AddressID = deliveryDocumentPartner.AddressID
+
+			partners = append(partners, partner)
+		}
+	}
+
+	return partners, nil
+}
+
+func ConvertToAddress(
+	sdc *api_input_reader.SDC,
+	psdc *api_processing_data_formatter.SDC,
+) ([]*Address, error) {
+	var err error
+
+	addresses := make([]*Address, 0)
+	for _, deliveryDocument := range psdc.CalculateDeliveryDocument {
+		for _, deliveryDocumentAddress := range psdc.Address {
+			address := &Address{}
+			inputAddress := sdc.Header.Address[0]
+
+			// 入力ファイル
+			address, err = jsonTypeConversion(address, inputAddress)
+			if err != nil {
+				return nil, err
+			}
+
+			address.DeliveryDocument = deliveryDocument.DeliveryDocument
+			address.AddressID = deliveryDocumentAddress.AddressID
+			address.PostalCode = deliveryDocumentAddress.PostalCode
+			address.LocalRegion = deliveryDocumentAddress.LocalRegion
+			address.Country = deliveryDocumentAddress.Country
+			address.District = deliveryDocumentAddress.District
+			address.StreetName = deliveryDocumentAddress.StreetName
+			address.CityName = deliveryDocumentAddress.CityName
+			address.Building = deliveryDocumentAddress.Building
+			address.Floor = deliveryDocumentAddress.Floor
+			address.Room = deliveryDocumentAddress.Room
+
+			addresses = append(addresses, address)
+		}
+	}
+
+	return addresses, nil
 }
 
 func getBoolPtr(b bool) *bool {

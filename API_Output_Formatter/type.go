@@ -24,7 +24,9 @@ type SDC struct {
 }
 
 type Message struct {
-	Item []*Item `json:"Item"`
+	Item    []*Item    `json:"Item"`
+	Partner []*Partner `json:"Partner"`
+	Address []*Address `json:"Address"`
 }
 
 type Header struct {
@@ -80,8 +82,8 @@ type Header struct {
 	HeaderDeliveryBlockStatus              *bool    `json:"HeaderDeliveryBlockStatus"`
 	HeaderIssuingBlockStatus               *bool    `json:"HeaderIssuingBlockStatus"`
 	HeaderReceivingBlockStatus             *bool    `json:"HeaderReceivingBlockStatus"`
-	HeaderIsCancelled                      *bool    `json:"HeaderIsCancelled"`
-	HeaderIsDeleted                        *bool    `json:"HeaderIsDeleted"`
+	IsCancelled                            *bool    `json:"HeaderIsCancelled"`
+	IsMarkedForDeletion                    *bool    `json:"HeaderIsDeleted"`
 }
 
 type Item struct {
@@ -112,26 +114,20 @@ type Item struct {
 	BatchMgmtPolicyInDeliverToPlant               *string  `json:"BatchMgmtPolicyInDeliverToPlant"`
 	DeliverToPlantBatch                           *string  `json:"DeliverToPlantBatch"`
 	DeliverToPlantBatchValidityStartDate          *string  `json:"DeliverToPlantBatchValidityStartDate"`
-	DeliverToPlantBatchValidityStartTime          *string  `json:"DeliverToPlantBatchValidityStartTime"`
 	DeliverToPlantBatchValidityEndDate            *string  `json:"DeliverToPlantBatchValidityEndDate"`
-	DeliverToPlantBatchValidityEndTime            *string  `json:"DeliverToPlantBatchValidityEndTime"`
 	DeliverFromPlantStorageLocation               *string  `json:"DeliverFromPlantStorageLocation"`
 	ProductIsBatchManagedInDeliverFromPlant       *bool    `json:"ProductIsBatchManagedInDeliverFromPlant"`
 	BatchMgmtPolicyInDeliverFromPlant             *string  `json:"BatchMgmtPolicyInDeliverFromPlant"`
 	DeliverFromPlantBatch                         *string  `json:"DeliverFromPlantBatch"`
 	DeliverFromPlantBatchValidityStartDate        *string  `json:"DeliverFromPlantBatchValidityStartDate"`
-	DeliverFromPlantBatchValidityStartTime        *string  `json:"DeliverFromPlantBatchValidityStartTime"`
 	DeliverFromPlantBatchValidityEndDate          *string  `json:"DeliverFromPlantBatchValidityEndDate"`
-	DeliverFromPlantBatchValidityEndTime          *string  `json:"DeliverFromPlantBatchValidityEndTime"`
 	StockConfirmationBusinessPartner              *int     `json:"StockConfirmationBusinessPartner"`
 	StockConfirmationPlant                        *string  `json:"StockConfirmationPlant"`
 	ProductIsBatchManagedInStockConfirmationPlant *bool    `json:"ProductIsBatchManagedInStockConfirmationPlant"`
 	BatchMgmtPolicyInStockConfirmationPlant       *string  `json:"BatchMgmtPolicyInStockConfirmationPlant"`
 	StockConfirmationPlantBatch                   *string  `json:"StockConfirmationPlantBatch"`
 	StockConfirmationPlantBatchValidityStartDate  *string  `json:"StockConfirmationPlantBatchValidityStartDate"`
-	StockConfirmationPlantBatchValidityStartTime  *string  `json:"StockConfirmationPlantBatchValidityStartTime"`
 	StockConfirmationPlantBatchValidityEndDate    *string  `json:"StockConfirmationPlantBatchValidityEndDate"`
-	StockConfirmationPlantBatchValidityEndTime    *string  `json:"StockConfirmationPlantBatchValidityEndTime"`
 	StockConfirmationPolicy                       *string  `json:"StockConfirmationPolicy"`
 	StockConfirmationStatus                       *string  `json:"StockConfirmationStatus"`
 	ProductionPlantBusinessPartner                *int     `json:"ProductionPlantBusinessPartner"`
@@ -141,9 +137,7 @@ type Item struct {
 	BatchMgmtPolicyInProductionPlant              *string  `json:"BatchMgmtPolicyInProductionPlant"`
 	ProductionPlantBatch                          *string  `json:"ProductionPlantBatch"`
 	ProductionPlantBatchValidityStartDate         *string  `json:"ProductionPlantBatchValidityStartDate"`
-	ProductionPlantBatchValidityStartTime         *string  `json:"ProductionPlantBatchValidityStartTime"`
 	ProductionPlantBatchValidityEndDate           *string  `json:"ProductionPlantBatchValidityEndDate"`
-	ProductionPlantBatchValidityEndTime           *string  `json:"ProductionPlantBatchValidityEndTime"`
 	DeliveryDocumentItemText                      *string  `json:"DeliveryDocumentItemText"`
 	DeliveryDocumentItemTextByBuyer               string   `json:"DeliveryDocumentItemTextByBuyer"`
 	DeliveryDocumentItemTextBySeller              string   `json:"DeliveryDocumentItemTextBySeller"`
@@ -207,8 +201,8 @@ type Item struct {
 	ItemIssuingBlockStatus                        *bool    `json:"ItemIssuingBlockStatus"`
 	ItemReceivingBlockStatus                      *bool    `json:"ItemReceivingBlockStatus"`
 	ItemBillingBlockStatus                        *bool    `json:"ItemBillingBlockStatus"`
-	ItemIsCancelled                               *bool    `json:"ItemIsCancelled"`
-	ItemIsDeleted                                 *bool    `json:"ItemIsDeleted"`
+	IsCancelled                                   *bool    `json:"IsCancelled"`
+	IsMarkedForDeletion                           *bool    `json:"IsMarkedForDeletion"`
 }
 
 type Partner struct {

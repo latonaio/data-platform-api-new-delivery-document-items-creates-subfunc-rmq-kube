@@ -30,6 +30,10 @@ spec:
               value: "data-platform-api-delivery-document-items-creates-subfunc-queue"
             - name : "RMQ_QUEUE_TO"
               value: "data-platform-api-delivery-document-items-creates-subfunc-queue"
+            - name : "RMQ_QUEUE_TO_SQL"
+              value: "sql-update-kube"
+            - name : "RMQ_SESSION_CONTROL_QUEUE"
+              value: "data-platform-api-delivery-document-items-creates-subfunc-session-control-queue"
             - name : "MYSQL_DB_NAME"
               value: "DataPlatformMastersAndTransactionsMysqlKube"
           envFrom:

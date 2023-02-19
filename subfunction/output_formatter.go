@@ -16,8 +16,20 @@ func (f *SubFunction) SetValue(
 		return err
 	}
 
+	partner, err := dpfm_api_output_formatter.ConvertToPartner(sdc, psdc)
+	if err != nil {
+		return err
+	}
+
+	address, err := dpfm_api_output_formatter.ConvertToAddress(sdc, psdc)
+	if err != nil {
+		return err
+	}
+
 	osdc.Message = dpfm_api_output_formatter.Message{
-		Item: item,
+		Item:    item,
+		Partner: partner,
+		Address: address,
 	}
 
 	return err

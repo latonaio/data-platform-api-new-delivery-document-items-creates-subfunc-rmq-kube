@@ -6,6 +6,7 @@ import (
 	dpfm_api_output_formatter "data-platform-api-delivery-document-items-creates-subfunc/API_Output_Formatter"
 	api_processing_data_formatter "data-platform-api-delivery-document-items-creates-subfunc/API_Processing_Data_Formatter"
 	"data-platform-api-delivery-document-items-creates-subfunc/config"
+	"time"
 
 	"data-platform-api-delivery-document-items-creates-subfunc/subfunction"
 
@@ -28,7 +29,7 @@ func main() {
 	}
 	defer db.Close()
 
-	rmq, err := rabbitmq.NewRabbitmqClient(c.RMQ.URL(), c.RMQ.QueueFrom(), "", c.RMQ.QueueTo(), -1)
+	rmq, err := rabbitmq.NewRabbitmqClient(c.RMQ.URL(), c.RMQ.QueueFrom(), c.RMQ.SessionControlQueue(), c.RMQ.QueueTo(), -1)
 	if err != nil {
 		l.Fatal(err.Error())
 	}
@@ -38,8 +39,9 @@ func main() {
 	}
 	defer rmq.Stop()
 	for msg := range iter {
+		start := time.Now()
 		msg.Success()
-		sdc, err := callProcess(ctx, db, msg, c)
+		sdc, err := callProcess(ctx, db, rmq, msg, c)
 		sdc.SubfuncResult = getBoolPtr(err == nil)
 		if err != nil {
 			sdc.SubfuncError = err.Error()
@@ -50,6 +52,7 @@ func main() {
 		if err != nil {
 			l.Error(err)
 		}
+		l.Info("process time %v\n", time.Since(start).Milliseconds())
 	}
 }
 
@@ -58,12 +61,12 @@ func getSessionID(data map[string]interface{}) string {
 	return id
 }
 
-func callProcess(ctx context.Context, db *database.Mysql, msg rabbitmq.RabbitmqMessage, c *config.Conf) (dpfm_api_output_formatter.SDC, error) {
+func callProcess(ctx context.Context, db *database.Mysql, rmq *rabbitmq.RabbitmqClient, msg rabbitmq.RabbitmqMessage, conf *config.Conf) (dpfm_api_output_formatter.SDC, error) {
 	var err error
 	l := logger.NewLogger()
 	l.AddHeaderInfo(map[string]interface{}{"runtime_session_id": getSessionID(msg.Data())})
 
-	subfunc := subfunction.NewSubFunction(ctx, db, l)
+	subfunc := subfunction.NewSubFunction(ctx, db, conf, rmq, l)
 	sdc := api_input_reader.ConvertToSDC(msg.Raw())
 	psdc := api_processing_data_formatter.ConvertToSDC()
 	osdc := dpfm_api_output_formatter.ConvertToSDC(msg.Raw())

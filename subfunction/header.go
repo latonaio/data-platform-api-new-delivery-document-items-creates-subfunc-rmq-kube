@@ -46,7 +46,7 @@ func (f *SubFunction) OrdersHeader(
 func (f *SubFunction) CalculateDeliveryDocument(
 	sdc *api_input_reader.SDC,
 	psdc *api_processing_data_formatter.SDC,
-) (*api_processing_data_formatter.CalculateDeliveryDocument, error) {
+) ([]*api_processing_data_formatter.CalculateDeliveryDocument, error) {
 	metaData := psdc.MetaData
 	dataKey := psdc.ConvertToCalculateDeliveryDocumentKey()
 
@@ -71,12 +71,52 @@ func (f *SubFunction) CalculateDeliveryDocument(
 		return nil, xerrors.Errorf("'data_platform_number_range_latest_number_data'テーブルのLatestNumberがNULLです。")
 	}
 
-	deliveryDocumentLatestNumber := dataQueryGets.DeliveryDocumentLatestNumber
-	deliveryDocument := *dataQueryGets.DeliveryDocumentLatestNumber + 1
+	deliverPlants := make([]api_processing_data_formatter.DeliverPlant, 0)
+	for _, orderItem := range psdc.OrderItem {
+		deliverFromPlant := orderItem.DeliverFromPlant
+		deliverToPlant := orderItem.DeliverToPlant
+		orderID := orderItem.OrderID
+		orderItem := orderItem.OrderItem
 
-	data := psdc.ConvertToCalculateDeliveryDocument(deliveryDocumentLatestNumber, deliveryDocument)
+		if deliverFromPlant == nil || deliverToPlant == nil {
+			continue
+		}
+
+		if deliverPlantContain(deliverPlants, *deliverFromPlant, *deliverToPlant) {
+			continue
+		}
+
+		deliverPlants = append(deliverPlants, api_processing_data_formatter.DeliverPlant{
+			DeliverFromPlant: *deliverFromPlant,
+			DeliverToPlant:   *deliverToPlant,
+			OrderID:          orderID,
+			OrderItem:        orderItem,
+		})
+	}
+
+	data := make([]*api_processing_data_formatter.CalculateDeliveryDocument, 0)
+	for i, deliverPlant := range deliverPlants {
+		deliveryDocumentLatestNumber := dataQueryGets.DeliveryDocumentLatestNumber
+		deliveryDocument := *dataQueryGets.DeliveryDocumentLatestNumber + i + 1
+		deliverFromPlant := deliverPlant.DeliverFromPlant
+		deliverToPlant := deliverPlant.DeliverToPlant
+		orderID := deliverPlant.OrderID
+		orderItem := deliverPlant.OrderItem
+
+		datum := psdc.ConvertToCalculateDeliveryDocument(deliveryDocumentLatestNumber, deliveryDocument, orderID, orderItem, deliverFromPlant, deliverToPlant)
+		data = append(data, datum)
+	}
 
 	return data, err
+}
+
+func deliverPlantContain(deliverPlants []api_processing_data_formatter.DeliverPlant, deliverFromPlant, deliverToPlant string) bool {
+	for _, deliverPlant := range deliverPlants {
+		if deliverFromPlant == deliverPlant.DeliverFromPlant && deliverToPlant == deliverPlant.DeliverToPlant {
+			return true
+		}
+	}
+	return false
 }
 
 func (f *SubFunction) DocumentDate(

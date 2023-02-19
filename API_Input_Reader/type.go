@@ -1,22 +1,23 @@
 package api_input_reader
 
 type SDC struct {
-	ConnectionKey                   string                          `json:"connection_key"`
-	Result                          bool                            `json:"result"`
-	RedisKey                        string                          `json:"redis_key"`
-	Filepath                        string                          `json:"filepath"`
-	APIStatusCode                   int                             `json:"api_status_code"`
-	RuntimeSessionID                string                          `json:"runtime_session_id"`
-	BusinessPartnerID               *int                            `json:"business_partner"`
-	ServiceLabel                    string                          `json:"service_label"`
-	DeliveryDocumentInputParameters DeliveryDocumentInputParameters `json:"DeliveryDocumentInputParameters"`
-	Header                          Header                          `json:"DeliveryDocument"`
-	APISchema                       string                          `json:"api_schema"`
-	Accepter                        []string                        `json:"accepter"`
-	Deleted                         bool                            `json:"deleted"`
+	ConnectionKey     string          `json:"connection_key"`
+	Result            bool            `json:"result"`
+	RedisKey          string          `json:"redis_key"`
+	Filepath          string          `json:"filepath"`
+	APIStatusCode     int             `json:"api_status_code"`
+	RuntimeSessionID  string          `json:"runtime_session_id"`
+	BusinessPartnerID *int            `json:"business_partner"`
+	APIType           string          `json:"api_type"`
+	ServiceLabel      string          `json:"service_label"`
+	InputParameters   InputParameters `json:"InputParameters"`
+	Header            Header          `json:"DeliveryDocument"`
+	APISchema         string          `json:"api_schema"`
+	Accepter          []string        `json:"accepter"`
+	Deleted           bool            `json:"deleted"`
 }
 
-type DeliveryDocumentInputParameters struct {
+type InputParameters struct {
 	DeliverToParty            *[]*int    `json:"DeliverToParty"`
 	DeliverToPartyTo          *int       `json:"DeliverToPartyTo"`
 	DeliverToPartyFrom        *int       `json:"DeliverToPartyFrom"`
@@ -78,6 +79,7 @@ type Header struct {
 	GoodsIssueOrReceiptSlipNumber          *string   `json:"GoodsIssueOrReceiptSlipNumber"`
 	HeaderBillingStatus                    *string   `json:"HeaderBillingStatus"`
 	HeaderBillingConfStatus                *string   `json:"HeaderBillingConfStatus"`
+	HeaderBillingBlockStatus               *bool     `json:"HeaderBillingBlockStatus"`
 	HeaderGrossWeight                      *float32  `json:"HeaderGrossWeight"`
 	HeaderNetWeight                        *float32  `json:"HeaderNetWeight"`
 	HeaderWeightUnit                       *string   `json:"HeaderWeightUnit"`
@@ -86,9 +88,8 @@ type Header struct {
 	HeaderDeliveryBlockStatus              *bool     `json:"HeaderDeliveryBlockStatus"`
 	HeaderIssuingBlockStatus               *bool     `json:"HeaderIssuingBlockStatus"`
 	HeaderReceivingBlockStatus             *bool     `json:"HeaderReceivingBlockStatus"`
-	HeaderBillingBlockStatus               *bool     `json:"HeaderBillingBlockStatus"`
-	HeaderIsCancelled                      *bool     `json:"HeaderIsCancelled"`
-	HeaderIsDeleted                        *bool     `json:"HeaderIsDeleted"`
+	IsCancelled                            *bool     `json:"HeaderIsCancelled"`
+	IsMarkedForDeletion                    *bool     `json:"HeaderIsDeleted"`
 	Item                                   []Item    `json:"DeliveryDocumentItem"`
 	Partner                                []Partner `json:"Partner"`
 	Address                                []Address `json:"Address"`
@@ -122,26 +123,20 @@ type Item struct {
 	BatchMgmtPolicyInDeliverToPlant               *string  `json:"BatchMgmtPolicyInDeliverToPlant"`
 	DeliverToPlantBatch                           *string  `json:"DeliverToPlantBatch"`
 	DeliverToPlantBatchValidityStartDate          *string  `json:"DeliverToPlantBatchValidityStartDate"`
-	DeliverToPlantBatchValidityStartTime          *string  `json:"DeliverToPlantBatchValidityStartTime"`
 	DeliverToPlantBatchValidityEndDate            *string  `json:"DeliverToPlantBatchValidityEndDate"`
-	DeliverToPlantBatchValidityEndTime            *string  `json:"DeliverToPlantBatchValidityEndTime"`
 	DeliverFromPlantStorageLocation               *string  `json:"DeliverFromPlantStorageLocation"`
 	ProductIsBatchManagedInDeliverFromPlant       *bool    `json:"ProductIsBatchManagedInDeliverFromPlant"`
 	BatchMgmtPolicyInDeliverFromPlant             *string  `json:"BatchMgmtPolicyInDeliverFromPlant"`
 	DeliverFromPlantBatch                         *string  `json:"DeliverFromPlantBatch"`
 	DeliverFromPlantBatchValidityStartDate        *string  `json:"DeliverFromPlantBatchValidityStartDate"`
-	DeliverFromPlantBatchValidityStartTime        *string  `json:"DeliverFromPlantBatchValidityStartTime"`
 	DeliverFromPlantBatchValidityEndDate          *string  `json:"DeliverFromPlantBatchValidityEndDate"`
-	DeliverFromPlantBatchValidityEndTime          *string  `json:"DeliverFromPlantBatchValidityEndTime"`
 	StockConfirmationBusinessPartner              *int     `json:"StockConfirmationBusinessPartner"`
 	StockConfirmationPlant                        *string  `json:"StockConfirmationPlant"`
 	ProductIsBatchManagedInStockConfirmationPlant *bool    `json:"ProductIsBatchManagedInStockConfirmationPlant"`
 	BatchMgmtPolicyInStockConfirmationPlant       *string  `json:"BatchMgmtPolicyInStockConfirmationPlant"`
 	StockConfirmationPlantBatch                   *string  `json:"StockConfirmationPlantBatch"`
 	StockConfirmationPlantBatchValidityStartDate  *string  `json:"StockConfirmationPlantBatchValidityStartDate"`
-	StockConfirmationPlantBatchValidityStartTime  *string  `json:"StockConfirmationPlantBatchValidityStartTime"`
 	StockConfirmationPlantBatchValidityEndDate    *string  `json:"StockConfirmationPlantBatchValidityEndDate"`
-	StockConfirmationPlantBatchValidityEndTime    *string  `json:"StockConfirmationPlantBatchValidityEndTime"`
 	StockConfirmationPolicy                       *string  `json:"StockConfirmationPolicy"`
 	StockConfirmationStatus                       *string  `json:"StockConfirmationStatus"`
 	ProductionPlantBusinessPartner                *int     `json:"ProductionPlantBusinessPartner"`
@@ -151,9 +146,7 @@ type Item struct {
 	BatchMgmtPolicyInProductionPlant              *string  `json:"BatchMgmtPolicyInProductionPlant"`
 	ProductionPlantBatch                          *string  `json:"ProductionPlantBatch"`
 	ProductionPlantBatchValidityStartDate         *string  `json:"ProductionPlantBatchValidityStartDate"`
-	ProductionPlantBatchValidityStartTime         *string  `json:"ProductionPlantBatchValidityStartTime"`
 	ProductionPlantBatchValidityEndDate           *string  `json:"ProductionPlantBatchValidityEndDate"`
-	ProductionPlantBatchValidityEndTime           *string  `json:"ProductionPlantBatchValidityEndTime"`
 	DeliveryDocumentItemText                      *string  `json:"DeliveryDocumentItemText"`
 	DeliveryDocumentItemTextByBuyer               *string  `json:"DeliveryDocumentItemTextByBuyer"`
 	DeliveryDocumentItemTextBySeller              *string  `json:"DeliveryDocumentItemTextBySeller"`
@@ -217,9 +210,10 @@ type Item struct {
 	ItemIssuingBlockStatus                        *bool    `json:"ItemIssuingBlockStatus"`
 	ItemReceivingBlockStatus                      *bool    `json:"ItemReceivingBlockStatus"`
 	ItemBillingBlockStatus                        *bool    `json:"ItemBillingBlockStatus"`
-	ItemIsCancelled                               *bool    `json:"ItemIsCancelled"`
-	ItemIsDeleted                                 *bool    `json:"ItemIsDeleted"`
+	IsCancelled                                   *bool    `json:"IsCancelled"`
+	IsMarkedForDeletion                           *bool    `json:"IsMarkedForDeletion"`
 }
+
 type Partner struct {
 	DeliveryDocument        int     `json:"DeliveryDocument"`
 	PartnerFunction         string  `json:"PartnerFunction"`
