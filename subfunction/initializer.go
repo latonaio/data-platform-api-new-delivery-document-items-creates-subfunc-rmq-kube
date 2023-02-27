@@ -311,7 +311,7 @@ func (f *SubFunction) OrdersItemScheduleLineByArraySpec(
 	args = append(args, dataKey.ItemScheduleLineDeliveryBlockStatus, dataKey.OpenConfirmedQuantityInBaseUnit)
 
 	rows, err := f.db.Query(
-		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OrderQuantityInBaseUnit,
+		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OriginalOrderQuantityInBaseUnit,
 		ConfirmedOrderQuantityByPDTAvailCheck, OpenConfirmedQuantityInBaseUnit, StockIsFullyConfirmed, ItemScheduleLineDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_schedule_line_data
 		WHERE (OrderID, OrderItem) IN ( `+repeat1+` )
@@ -358,7 +358,7 @@ func (f *SubFunction) OrdersItemScheduleLineByRangeSpec(
 	args = append(args, dataKey.ConfirmedDeliveryDateFrom, dataKey.ConfirmedDeliveryDateTo, dataKey.ItemScheduleLineDeliveryBlockStatus, dataKey.OpenConfirmedQuantityInBaseUnit)
 
 	rows, err := f.db.Query(
-		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OrderQuantityInBaseUnit,
+		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OriginalOrderQuantityInBaseUnit,
 		ConfirmedOrderQuantityByPDTAvailCheck, OpenConfirmedQuantityInBaseUnit, StockIsFullyConfirmed, ItemScheduleLineDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_schedule_line_data
 		WHERE (OrderID, OrderItem) IN ( `+repeat+` )
@@ -402,7 +402,7 @@ func (f *SubFunction) OrdersItemScheduleLineInIndividualProcess(
 	args = append(args, dataKey.ItemScheduleLineDeliveryBlockStatus, dataKey.OpenConfirmedQuantityInBaseUnit)
 
 	rows, err := f.db.Query(
-		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OrderQuantityInBaseUnit,
+		`SELECT OrderID, OrderItem, ScheduleLine, RequestedDeliveryDate, ConfirmedDeliveryDate, OriginalOrderQuantityInBaseUnit,
 		ConfirmedOrderQuantityByPDTAvailCheck, OpenConfirmedQuantityInBaseUnit, StockIsFullyConfirmed, ItemScheduleLineDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_schedule_line_data
 		WHERE (OrderID, OrderItem) IN ( `+repeat+` )
