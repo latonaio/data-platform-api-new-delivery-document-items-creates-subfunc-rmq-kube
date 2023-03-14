@@ -46,31 +46,7 @@ func (f *SubFunction) OrdersHeader(
 func (f *SubFunction) CalculateDeliveryDocument(
 	sdc *api_input_reader.SDC,
 	psdc *api_processing_data_formatter.SDC,
-) ([]*api_processing_data_formatter.CalculateDeliveryDocument, error) {
-	metaData := psdc.MetaData
-	dataKey := psdc.ConvertToCalculateDeliveryDocumentKey()
-
-	dataKey.ServiceLabel = metaData.ServiceLabel
-
-	rows, err := f.db.Query(
-		`SELECT ServiceLabel, FieldNameWithNumberRange, LatestNumber
-		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_number_range_latest_number_data
-		WHERE (ServiceLabel, FieldNameWithNumberRange) = (?, ?);`, dataKey.ServiceLabel, dataKey.FieldNameWithNumberRange,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	dataQueryGets, err := psdc.ConvertToCalculateDeliveryDocumentQueryGets(rows)
-	if err != nil {
-		return nil, err
-	}
-
-	if dataQueryGets.DeliveryDocumentLatestNumber == nil {
-		return nil, xerrors.Errorf("'data_platform_number_range_latest_number_data'テーブルのLatestNumberがNULLです。")
-	}
-
+) []*api_processing_data_formatter.CalculateDeliveryDocument {
 	deliverPlants := make([]api_processing_data_formatter.DeliverPlant, 0)
 	for _, orderItem := range psdc.OrderItem {
 		deliverFromPlant := orderItem.DeliverFromPlant
@@ -96,18 +72,17 @@ func (f *SubFunction) CalculateDeliveryDocument(
 
 	data := make([]*api_processing_data_formatter.CalculateDeliveryDocument, 0)
 	for i, deliverPlant := range deliverPlants {
-		deliveryDocumentLatestNumber := dataQueryGets.DeliveryDocumentLatestNumber
-		deliveryDocument := *dataQueryGets.DeliveryDocumentLatestNumber + i + 1
+		deliveryDocument := sdc.Header.DeliveryDocument + i
 		deliverFromPlant := deliverPlant.DeliverFromPlant
 		deliverToPlant := deliverPlant.DeliverToPlant
 		orderID := deliverPlant.OrderID
 		orderItem := deliverPlant.OrderItem
 
-		datum := psdc.ConvertToCalculateDeliveryDocument(deliveryDocumentLatestNumber, deliveryDocument, orderID, orderItem, deliverFromPlant, deliverToPlant)
+		datum := psdc.ConvertToCalculateDeliveryDocument(deliveryDocument, orderID, orderItem, deliverFromPlant, deliverToPlant)
 		data = append(data, datum)
 	}
 
-	return data, err
+	return data
 }
 
 func deliverPlantContain(deliverPlants []api_processing_data_formatter.DeliverPlant, deliverFromPlant, deliverToPlant string) bool {

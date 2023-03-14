@@ -90,7 +90,7 @@ type Header struct {
 	HeaderReceivingBlockStatus             *bool     `json:"HeaderReceivingBlockStatus"`
 	IsCancelled                            *bool     `json:"HeaderIsCancelled"`
 	IsMarkedForDeletion                    *bool     `json:"HeaderIsDeleted"`
-	Item                                   []Item    `json:"DeliveryDocumentItem"`
+	Item                                   []Item    `json:"Item"`
 	Partner                                []Partner `json:"Partner"`
 	Address                                []Address `json:"Address"`
 }
@@ -140,8 +140,8 @@ type Item struct {
 	BatchMgmtPolicyInStockConfirmationPlant       *string  `json:"BatchMgmtPolicyInStockConfirmationPlant"`
 	StockConfirmationPlantBatch                   *string  `json:"StockConfirmationPlantBatch"`
 	StockConfirmationPlantBatchValidityStartDate  *string  `json:"StockConfirmationPlantBatchValidityStartDate"`
-	StockConfirmationPlantBatchValidityEndDate    *string  `json:"StockConfirmationPlantBatchValidityEndDate"`
 	StockConfirmationPlantBatchValidityStartTime  *string  `json:"StockConfirmationPlantBatchValidityStartTime"`
+	StockConfirmationPlantBatchValidityEndDate    *string  `json:"StockConfirmationPlantBatchValidityEndDate"`
 	StockConfirmationPlantBatchValidityEndTime    *string  `json:"StockConfirmationPlantBatchValidityEndTime"`
 	StockConfirmationPolicy                       *string  `json:"StockConfirmationPolicy"`
 	StockConfirmationStatus                       *string  `json:"StockConfirmationStatus"`
@@ -152,9 +152,12 @@ type Item struct {
 	BatchMgmtPolicyInProductionPlant              *string  `json:"BatchMgmtPolicyInProductionPlant"`
 	ProductionPlantBatch                          *string  `json:"ProductionPlantBatch"`
 	ProductionPlantBatchValidityStartDate         *string  `json:"ProductionPlantBatchValidityStartDate"`
-	ProductionPlantBatchValidityEndDate           *string  `json:"ProductionPlantBatchValidityEndDate"`
 	ProductionPlantBatchValidityStartTime         *string  `json:"ProductionPlantBatchValidityStartTime"`
+	ProductionPlantBatchValidityEndDate           *string  `json:"ProductionPlantBatchValidityEndDate"`
 	ProductionPlantBatchValidityEndTime           *string  `json:"ProductionPlantBatchValidityEndTime"`
+	InspectionPlan                                *int     `json:"InspectionPlan"`
+	InspectionPlant                               *string  `json:"InspectionPlant"`
+	InspectionOrder                               *int     `json:"InspectionOrder"`
 	DeliveryDocumentItemText                      *string  `json:"DeliveryDocumentItemText"`
 	DeliveryDocumentItemTextByBuyer               *string  `json:"DeliveryDocumentItemTextByBuyer"`
 	DeliveryDocumentItemTextBySeller              *string  `json:"DeliveryDocumentItemTextBySeller"`
@@ -190,7 +193,7 @@ type Item struct {
 	ItemNetWeight                                 *float32 `json:"ItemNetWeight"`
 	ItemWeightUnit                                *string  `json:"ItemWeightUnit"`
 	InternalCapacityQuantity                      *float32 `json:"InternalCapacityQuantity"`
-	InternalCapacityQuantityUnit                  *bool    `json:"InternalCapacityQuantityUnit"`
+	InternalCapacityQuantityUnit                  *string  `json:"InternalCapacityQuantityUnit"`
 	ItemIsBillingRelevant                         *bool    `json:"ItemIsBillingRelevant"`
 	NetAmount                                     *float32 `json:"NetAmount"`
 	TaxAmount                                     *float32 `json:"TaxAmount"`

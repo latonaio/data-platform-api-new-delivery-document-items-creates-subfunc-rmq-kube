@@ -123,24 +123,12 @@ type OrdersHeader struct {
 	HeaderText                       *string `json:"HeaderText"`
 }
 
-type CalculateDeliveryDocumentKey struct {
-	ServiceLabel             string `json:"service_label"`
-	FieldNameWithNumberRange string `json:"FieldNameWithNumberRange"`
-}
-
-type CalculateDeliveryDocumentQueryGets struct {
-	ServiceLabel                 string `json:"service_label"`
-	FieldNameWithNumberRange     string `json:"FieldNameWithNumberRange"`
-	DeliveryDocumentLatestNumber *int   `json:"DeliveryDocumentLatestNumber"`
-}
-
 type CalculateDeliveryDocument struct {
-	DeliveryDocumentLatestNumber *int   `json:"DeliveryDocumentLatestNumber"`
-	DeliveryDocument             int    `json:"DeliveryDocument"`
-	OrderID                      int    `json:"OrderID"`
-	OrderItem                    int    `json:"OrderItem"`
-	DeliverFromPlant             string `json:"DeliverFromPlant"`
-	DeliverToPlant               string `json:"DeliverToPlant"`
+	DeliveryDocument int    `json:"DeliveryDocument"`
+	OrderID          int    `json:"OrderID"`
+	OrderItem        int    `json:"OrderItem"`
+	DeliverFromPlant string `json:"DeliverFromPlant"`
+	DeliverToPlant   string `json:"DeliverToPlant"`
 }
 
 type DeliverPlant struct {
@@ -178,8 +166,6 @@ type HeaderNetWeight struct {
 
 // Item
 type DeliveryDocumentItem struct {
-	OrderID                    int `json:"OrderID"`
-	OrderItem                  int `json:"OrderItem"`
 	DeliveryDocumentItemNumber int `json:"DeliveryDocumentItemNumber"`
 }
 

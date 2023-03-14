@@ -185,11 +185,17 @@ func ConvertToPartner(
 		for _, deliveryDocumentPartner := range psdc.Partner {
 			partner := &Partner{}
 			inputPartner := sdc.Header.Partner[0]
+			partnerFunction := deliveryDocumentPartner.PartnerFunction
+			businessPartner := deliveryDocumentPartner.BusinessPartner
 
 			// 入力ファイル
 			partner, err = jsonTypeConversion(partner, inputPartner)
 			if err != nil {
 				return nil, err
+			}
+
+			if partnerContain(partners, partnerFunction, businessPartner) {
+				continue
 			}
 
 			partner.DeliveryDocument = deliveryDocument.DeliveryDocument
@@ -221,11 +227,16 @@ func ConvertToAddress(
 		for _, deliveryDocumentAddress := range psdc.Address {
 			address := &Address{}
 			inputAddress := sdc.Header.Address[0]
+			addressID := deliveryDocumentAddress.AddressID
 
 			// 入力ファイル
 			address, err = jsonTypeConversion(address, inputAddress)
 			if err != nil {
 				return nil, err
+			}
+
+			if addressContain(addresses, addressID) {
+				continue
 			}
 
 			address.DeliveryDocument = deliveryDocument.DeliveryDocument
@@ -302,4 +313,22 @@ func jsonTypeConversion[T any](dist T, data interface{}) (T, error) {
 		return dist, xerrors.Errorf("Unmarshal error: %w", err)
 	}
 	return dist, nil
+}
+
+func partnerContain(partners []*Partner, partnerFunction string, businessPartner int) bool {
+	for _, partner := range partners {
+		if partnerFunction == partner.PartnerFunction && businessPartner == partner.BusinessPartner {
+			return true
+		}
+	}
+	return false
+}
+
+func addressContain(addresses []*Address, addressID int) bool {
+	for _, address := range addresses {
+		if addressID == address.AddressID {
+			return true
+		}
+	}
+	return false
 }

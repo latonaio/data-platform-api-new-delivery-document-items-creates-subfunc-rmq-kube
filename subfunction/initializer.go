@@ -49,15 +49,60 @@ func (f *SubFunction) ProcessType(
 ) *api_processing_data_formatter.ProcessType {
 	processType := psdc.ConvertToProcessType()
 
-	processType.BulkProcess = true
-	// processType.IndividualProcess = true
+	if isBulkProcess(sdc, processType) {
+		processType.BulkProcess = true
+	}
 
-	if processType.BulkProcess {
-		// processType.ArraySpec = true
-		processType.RangeSpec = true
+	if isIndividualProcess(sdc) {
+		processType.IndividualProcess = true
 	}
 
 	return processType
+}
+
+func isBulkProcess(
+	sdc *api_input_reader.SDC,
+	processType *api_processing_data_formatter.ProcessType,
+) bool {
+	inputParameters := sdc.InputParameters
+
+	if inputParameters.DeliverToParty != nil && inputParameters.DeliverFromParty != nil &&
+		inputParameters.DeliverToPlant != nil && inputParameters.DeliverFromPlant != nil &&
+		inputParameters.ConfirmedDeliveryDate != nil {
+		if (*inputParameters.DeliverToParty)[0] != nil && (*inputParameters.DeliverFromParty)[0] != nil &&
+			(*inputParameters.DeliverToPlant)[0] != nil && (*inputParameters.DeliverFromPlant)[0] != nil &&
+			(*inputParameters.ConfirmedDeliveryDate)[0] != nil {
+			if len(*(*inputParameters.DeliverToPlant)[0]) != 0 && len(*(*inputParameters.DeliverFromPlant)[0]) != 0 &&
+				len(*(*inputParameters.ConfirmedDeliveryDate)[0]) != 0 {
+				processType.ArraySpec = true
+				return true
+			}
+		}
+	}
+
+	if inputParameters.DeliverToPartyTo != nil && inputParameters.DeliverToPartyFrom != nil &&
+		inputParameters.DeliverFromPartyTo != nil && inputParameters.DeliverFromPartyFrom != nil &&
+		inputParameters.DeliverToPlantTo != nil && inputParameters.DeliverToPlantFrom != nil &&
+		inputParameters.DeliverFromPlantTo != nil && inputParameters.DeliverFromPlantFrom != nil &&
+		inputParameters.ConfirmedDeliveryDateTo != nil && inputParameters.ConfirmedDeliveryDateFrom != nil {
+		if len(*inputParameters.DeliverFromPlantTo) == 0 && len(*inputParameters.DeliverToPlantFrom) == 0 &&
+			len(*inputParameters.ConfirmedDeliveryDateTo) == 0 && len(*inputParameters.ConfirmedDeliveryDateFrom) == 0 {
+			processType.RangeSpec = true
+			return true
+		}
+	}
+
+	return false
+}
+
+func isIndividualProcess(sdc *api_input_reader.SDC) bool {
+	header := sdc.Header
+
+	if header.ReferenceDocument != nil && header.ReferenceDocumentItem != nil {
+		return true
+	}
+
+	return false
 }
 
 func (f *SubFunction) OrderItemInBulkProcess(
@@ -97,18 +142,10 @@ func (f *SubFunction) OrderItemByArraySpec(
 	deliverToPlant := sdc.InputParameters.DeliverToPlant
 	deliverFromPlant := sdc.InputParameters.DeliverFromPlant
 
-	for i := range *deliverToParty {
-		dataKey.DeliverToParty = append(dataKey.DeliverToParty, (*deliverToParty)[i])
-	}
-	for i := range *deliverFromParty {
-		dataKey.DeliverFromParty = append(dataKey.DeliverFromParty, (*deliverFromParty)[i])
-	}
-	for i := range *deliverToPlant {
-		dataKey.DeliverToPlant = append(dataKey.DeliverToPlant, (*deliverToPlant)[i])
-	}
-	for i := range *deliverFromPlant {
-		dataKey.DeliverFromPlant = append(dataKey.DeliverFromPlant, (*deliverFromPlant)[i])
-	}
+	dataKey.DeliverToParty = append(dataKey.DeliverToParty, *deliverToParty...)
+	dataKey.DeliverFromParty = append(dataKey.DeliverFromParty, *deliverFromParty...)
+	dataKey.DeliverToPlant = append(dataKey.DeliverToPlant, *deliverToPlant...)
+	dataKey.DeliverFromPlant = append(dataKey.DeliverFromPlant, *deliverFromPlant...)
 
 	repeat1 := strings.Repeat("?,", len(dataKey.DeliverToParty)-1) + "?"
 	for _, v := range dataKey.DeliverToParty {
@@ -238,7 +275,8 @@ func (f *SubFunction) OrderItemInIndividualProcess(
 	dataKey.OrderItem = sdc.Header.ReferenceDocumentItem
 
 	rows, err := f.db.Query(
-		`SELECT OrderID, OrderItem, ItemCompleteDeliveryIsDefined, ItemDeliveryStatus, ItemDeliveryBlockStatus
+		`SELECT OrderID, OrderItem, DeliverToParty, DeliverFromParty, DeliverToPlant, DeliverFromPlant, 
+		ItemCompleteDeliveryIsDefined, ItemDeliveryStatus, ItemDeliveryBlockStatus
 		FROM DataPlatformMastersAndTransactionsMysqlKube.data_platform_orders_item_data
 		WHERE (OrderID, OrderItem, ItemCompleteDeliveryIsDefined, ItemDeliveryBlockStatus) = (?, ?, ?, ?)
 		AND ItemDeliveryStatus <> ?;`, dataKey.OrderID, dataKey.OrderItem, dataKey.ItemCompleteDeliveryIsDefined, dataKey.ItemDeliveryBlockStatus, dataKey.ItemDeliveryStatus,
@@ -295,9 +333,8 @@ func (f *SubFunction) OrdersItemScheduleLineByArraySpec(
 		dataKey.OrderID = append(dataKey.OrderID, (orderItem)[i].OrderID)
 		dataKey.OrderItem = append(dataKey.OrderItem, (orderItem)[i].OrderItem)
 	}
-	for i := range *confirmedDeliveryDate {
-		dataKey.ConfirmedDeliveryDate = append(dataKey.ConfirmedDeliveryDate, (*confirmedDeliveryDate)[i])
-	}
+
+	dataKey.ConfirmedDeliveryDate = append(dataKey.ConfirmedDeliveryDate, *confirmedDeliveryDate...)
 
 	repeat1 := strings.Repeat("(?,?),", len(dataKey.OrderID)-1) + "(?,?)"
 	for i := range dataKey.OrderID {
@@ -491,11 +528,7 @@ func (f *SubFunction) CreateSdc(
 		go func(wg *sync.WaitGroup) {
 			defer wg.Done()
 			// 1-3. DeliveryDocument  //IまたはII
-			psdc.CalculateDeliveryDocument, e = f.CalculateDeliveryDocument(sdc, psdc)
-			if e != nil {
-				err = e
-				return
-			}
+			psdc.CalculateDeliveryDocument = f.CalculateDeliveryDocument(sdc, psdc)
 		}(wg)
 
 		wg.Add(1)

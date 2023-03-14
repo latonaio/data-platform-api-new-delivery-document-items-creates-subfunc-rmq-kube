@@ -52,8 +52,8 @@ func (f *SubFunction) AddressFromInput(
 	addressMasterdata := make([]*api_processing_data_formatter.AddressMaster, 0)
 	addressID := calculateAddressID.AddressID
 	for i, v := range sdc.Header.Address {
-		if v.PostalCode != nil || v.LocalRegion != nil || v.Country != nil || v.District != nil || v.StreetName != nil || v.CityName != nil {
-			if len(*v.PostalCode) != 0 || len(*v.LocalRegion) != 0 || len(*v.Country) != 0 || len(*v.District) != 0 || len(*v.StreetName) != 0 || len(*v.CityName) != 0 {
+		if v.PostalCode != nil && v.LocalRegion != nil && v.Country != nil && v.District != nil && v.StreetName != nil && v.CityName != nil {
+			if len(*v.PostalCode) != 0 && len(*v.LocalRegion) != 0 && len(*v.Country) != 0 && len(*v.District) != 0 && len(*v.StreetName) != 0 && len(*v.CityName) != 0 {
 				processFlag = true
 				datum := psdc.ConvertToAddressMaster(sdc, i, addressID)
 				addressMasterdata = append(addressMasterdata, datum)
