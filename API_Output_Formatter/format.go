@@ -93,9 +93,10 @@ func ConvertToItem(
 			item.ItemBillingStatus = getStringPtr("NP")
 			// item.SalesCostGLAccount =  //TBD
 			// item.ReceivingGLAccount =  //TBD
+			// item.IssuingGoodsMovementType = //TBD
+			// item.ReceivingGoodsMovementType = //TBD
 			item.ItemCompleteDeliveryIsDefined = getBoolPtr(false)
 			// item.ItemIsBillingRelevant =  //TBD
-
 			// item.DueCalculationBaseDate =  //仕様書になし
 			// item.PaymentDueDate =  //仕様書になし
 			// item.NetPaymentDays =  //仕様書になし
@@ -151,6 +152,8 @@ func ConvertToItem(
 			item.ItemBillingStatus = getStringPtr("NP")
 			// item.SalesCostGLAccount =  //TBD
 			// item.ReceivingGLAccount =  //TBD
+			// item.IssuingGoodsMovementType = //TBD
+			// item.ReceivingGoodsMovementType = //TBD
 			item.ItemCompleteDeliveryIsDefined = getBoolPtr(false)
 			// item.ItemIsBillingRelevant =  //TBD
 

@@ -540,6 +540,10 @@ func (f *SubFunction) CreateSdc(
 				err = e
 				return
 			}
+
+			// 2-3 ItemIsBillingRelevant //1-5
+			psdc.ItemIsBillingRelevant = f.ItemIsBillingRelevant(sdc, psdc)
+
 		}(wg)
 
 		wg.Add(1)

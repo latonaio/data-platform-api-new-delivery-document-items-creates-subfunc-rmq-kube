@@ -21,6 +21,7 @@ type SDC struct {
 	Partner                   []*Partner                   `json:"Partner"`
 	Address                   []*Address                   `json:"Address"`
 	AddressMaster             []*AddressMaster             `json:"AddressMaster"`
+	ItemIsBillingRelevant     *ItemIsBillingRelevant       `json:"ItemIsBillingRelevant"`
 	CreationDateItem          *CreationDate                `json:"CreationDateItem"`
 	LastChangeDateItem        *LastChangeDate              `json:"LastChangeDateItem"`
 	CreationTimeItem          *CreationTime                `json:"CreationTimeItem"`
@@ -258,6 +259,10 @@ type OrdersItem struct {
 	TaxRate                                       *float32 `json:"TaxRate"`
 	CountryOfOrigin                               *string  `json:"CountryOfOrigin"`
 	CountryOfOriginLanguage                       *string  `json:"CountryOfOriginLanguage"`
+}
+
+type ItemIsBillingRelevant struct {
+	ItemIsBillingRelevant bool `json:"ItemIsBillingRelevant"`
 }
 
 // Partner

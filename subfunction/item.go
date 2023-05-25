@@ -65,6 +65,24 @@ func (f *SubFunction) OrdersItem(
 	return data, err
 }
 
+func (f *SubFunction) ItemIsBillingRelevant(
+	sdc *api_input_reader.SDC,
+	psdc *api_processing_data_formatter.SDC,
+) *api_processing_data_formatter.ItemIsBillingRelevant {
+
+	itemIsBillingRelevant := false
+	invoiceDocumentDate := psdc.InvoiceDocumentDate.InvoiceDocumentDate
+	if *invoiceDocumentDate != "" && invoiceDocumentDate != nil {
+		itemIsBillingRelevant = true
+	} else {
+		itemIsBillingRelevant = false
+	}
+
+	data := psdc.ConvertToItemIsBillingRelevant(itemIsBillingRelevant)
+
+	return data
+}
+
 func (f *SubFunction) CreationDateItem(
 	sdc *api_input_reader.SDC,
 	psdc *api_processing_data_formatter.SDC,

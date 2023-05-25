@@ -745,6 +745,19 @@ func (psdc *SDC) ConvertToOrdersItem(rows *sql.Rows) ([]*OrdersItem, error) {
 	return res, nil
 }
 
+func (psdc *SDC) ConvertToItemIsBillingRelevant(itemIsBillingRelevant bool) *ItemIsBillingRelevant {
+	pm := &requests.ItemIsBillingRelevant{
+		ItemIsBillingRelevant: itemIsBillingRelevant,
+	}
+
+	data := pm
+	res := &ItemIsBillingRelevant{
+		ItemIsBillingRelevant: data.ItemIsBillingRelevant,
+	}
+
+	return res
+}
+
 // Partner
 func (psdc *SDC) ConvertToPartner(rows *sql.Rows) ([]*Partner, error) {
 	defer rows.Close()
